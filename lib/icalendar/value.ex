@@ -54,9 +54,12 @@ defimpl Value, for: Tuple do
   @doc """
   This function converts Erlang timestamp tuples into DateTimes.
   """
-  def to_ics(timestamp) when is_datetime_tuple(timestamp) do
-    timestamp
-    |> Timex.to_datetime()
+  def to_ics({date_t, time_t} = timestamp) when is_datetime_tuple(timestamp) do
+    date = Date.from_erl!(date_t)
+    time = Time.from_erl!(time_t)
+
+    date
+    |> DateTime.new!(time)
     |> Value.to_ics()
   end
 
@@ -64,38 +67,22 @@ defimpl Value, for: Tuple do
 end
 
 defimpl Value, for: DateTime do
-  use Timex
-
   @doc """
   This function converts DateTimes to UTC timezone and then into Strings in the
   iCal format.
   """
   def to_ics(%DateTime{} = timestamp) do
-    format_string = "{YYYY}{0M}{0D}T{h24}{m}{s}"
-
-    {:ok, result} =
-      timestamp
-      |> Timex.format(format_string)
-
-    result
+    Calendar.strftime(timestamp, "%Y%m%dT%H%M%S")
   end
 end
 
 defimpl Value, for: Date do
-  use Timex
-
   @doc """
   This function converts DateTimes to UTC timezone and then into Strings in the
   iCal format.
   """
   def to_ics(%Date{} = timestamp) do
-    format_string = "{YYYY}{0M}{0D}"
-
-    {:ok, result} =
-      timestamp
-      |> Timex.format(format_string)
-
-    result
+    Calendar.strftime(timestamp, "%Y%m%d")
   end
 end
 

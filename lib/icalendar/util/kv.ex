@@ -20,7 +20,7 @@ defmodule ICalendar.Util.KV do
 
       iex> date =
       ...>   {{2015, 12, 24}, {8, 30, 0}}
-      ...>   |> Timex.to_datetime("America/Chicago")
+      ...>   |> DateTimeHelper.to_datetime("America/Chicago")
       ...> ICalendar.Util.KV.build("foo", date)
       "foo;TZID=America/Chicago:20151224T083000\n"
 
