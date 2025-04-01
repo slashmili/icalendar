@@ -211,45 +211,38 @@ defmodule ICalendar.Util.Deserialize do
 
   It should be able to handle dates from the past:
 
-      iex> {:ok, date} = ICalendar.Util.Deserialize.to_date("19930407T153022Z")
-      ...> Timex.to_erl(date)
-      {{1993, 4, 7}, {15, 30, 22}}
+      iex> ICalendar.Util.Deserialize.to_date("19930407T153022Z")
+      {:ok, ~U[1993-04-07 15:30:22Z]}
 
   As well as the future:
 
-      iex> {:ok, date} = ICalendar.Util.Deserialize.to_date("39930407T153022Z")
-      ...> Timex.to_erl(date)
-      {{3993, 4, 7}, {15, 30, 22}}
+      iex> ICalendar.Util.Deserialize.to_date("39930407T153022Z")
+      {:ok, ~U[3993-04-07 15:30:22Z]}
 
   And should return error for incorrect dates:
 
       iex> ICalendar.Util.Deserialize.to_date("1993/04/07")
-      {:error, "Expected `2 digit month` at line 1, column 5."}
+      {:error, "Invalid date format 1993/04/07"}
 
   It should handle timezones from  the Olson Database:
 
-      iex> {:ok, date} = ICalendar.Util.Deserialize.to_date("19980119T020000",
+      iex> ICalendar.Util.Deserialize.to_date("19980119T020000",
       ...> %{"TZID" => "America/Chicago"})
-      ...> [Timex.to_erl(date), date.time_zone]
-      [{{1998, 1, 19}, {2, 0, 0}}, "America/Chicago"]
+      DateTime.new(~D[1998-01-19], ~T[02:00:00], "America/Chicago", Tzdata.TimeZoneDatabase)
+
   """
   def to_date(date_string, %{"TZID" => timezone}) do
     # Microsoft Outlook calendar .ICS files report times in Greenwich Standard Time (UTC +0)
     # so just convert this to UTC
+
     timezone =
       if Regex.match?(~r/\//, timezone) do
         timezone
       else
-        Timex.Timezone.Utils.to_olson(timezone)
+        "Etc/UTC"
       end
 
-    date_string =
-      case String.last(date_string) do
-        "Z" -> date_string
-        _ -> date_string <> "Z"
-      end
-
-    Timex.parse(date_string <> timezone, "{YYYY}{0M}{0D}T{h24}{m}{s}Z{Zname}")
+    parse_date_string(date_string, timezone)
   end
 
   def to_date(date_string, %{"VALUE" => "DATE"}) do
@@ -356,5 +349,32 @@ defmodule ICalendar.Util.Deserialize do
           hash
       end
     end)
+  end
+
+  defp to_datetime({date_t, time_t}, time_zone) do
+    date = Date.from_erl!(date_t)
+    time = Time.from_erl!(time_t)
+
+    date
+    |> DateTime.new!(time, time_zone, Tzdata.TimeZoneDatabase)
+  end
+
+  def parse_date_string(
+        <<year::binary-4, month::binary-2, day::binary-2, "T", hour::binary-2, min::binary-2,
+          sec::binary-2, _::binary>>,
+        time_zone
+      ) do
+    year = String.to_integer(year)
+    month = String.to_integer(month)
+    day = String.to_integer(day)
+    hour = String.to_integer(hour)
+    min = String.to_integer(min)
+    sec = String.to_integer(sec)
+
+    {:ok, to_datetime({{year, month, day}, {hour, min, sec}}, time_zone)}
+  end
+
+  def parse_date_string(datetime_string, _) do
+    {:error, "Invalid date format #{datetime_string}"}
   end
 end

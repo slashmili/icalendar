@@ -20,8 +20,8 @@ defmodule ICalendar.Util.DeserializeTest do
 
     assert event == %Event{
              description: "Escape from the world. Stare at some water.",
-             dtstart: Timex.to_datetime({{2015, 12, 24}, {8, 30, 0}}),
-             dtend: Timex.to_datetime({{2015, 12, 24}, {8, 45, 0}}),
+             dtstart: DateTimeHelper.to_datetime({{2015, 12, 24}, {8, 30, 0}}),
+             dtend: DateTimeHelper.to_datetime({{2015, 12, 24}, {8, 45, 0}}),
              location: nil,
              summary: "Going fishing"
            }
@@ -115,6 +115,7 @@ defmodule ICalendar.Util.DeserializeTest do
       |> Deserialize.build_event()
 
     assert %Event{} = event
+    assert event.dtstart.time_zone == "Etc/UTC"
   end
 
   test "ignore empty param values" do
@@ -232,8 +233,11 @@ defmodule ICalendar.Util.DeserializeTest do
       |> String.split("\n")
       |> Deserialize.build_event()
 
-    dt1 = Timex.Timezone.convert(~U[2020-09-16 18:30:00Z], "America/Toronto")
-    dt2 = Timex.Timezone.convert(~U[2020-09-17 18:30:00Z], "America/Toronto")
+    {:ok, dt1} =
+      DateTime.shift_zone(~U[2020-09-16 18:30:00Z], "America/Toronto", Tzdata.TimeZoneDatabase)
+
+    {:ok, dt2} =
+      DateTime.shift_zone(~U[2020-09-17 18:30:00Z], "America/Toronto", Tzdata.TimeZoneDatabase)
 
     assert %Event{
              exdates: [
