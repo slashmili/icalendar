@@ -72,6 +72,8 @@ defmodule ICalendar.Util.KV do
     rrule_tail_part =
       rrules
       |> Map.delete(:freq)
+      |> Map.to_list()
+      |> Enum.sort()
       |> Enum.map(fn {key, value} ->
         value =
           case {key, value} do
