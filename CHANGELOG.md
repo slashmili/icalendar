@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
+- Add support for the `DTSTAMP` field. If not provided, it is initialized to
+  the current UTC DateTime when serializing.
 - Remove Timex dependecy
 - Bump Elixir requirements to 1.17
 - Fix CI
